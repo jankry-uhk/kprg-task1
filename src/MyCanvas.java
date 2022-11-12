@@ -1,6 +1,7 @@
 import rasterize.LineRasterizer;
 import rasterize.RasterBufferedImage;
 import rasterize.TrivialLineRasterizer;
+import rasterize.FilledLineRasterizer;
 
 import javax.swing.*;
 import java.awt.*;
@@ -31,8 +32,8 @@ public class MyCanvas {
 
         // Instance rasteru. Můžeme mít různé rastery.
         raster = new RasterBufferedImage(width, height);
-        // Instance line rasterizeru. Můžeme mít různé rasterizery. Např. pro každý algoritmus tzn. TrivialLineRasterizer, MidpointLineRasterizer, ...
-        lineRasterizer = new TrivialLineRasterizer(raster);
+        // Filled line rasterizer s upravenym trivialnim algoritmem
+        lineRasterizer = new FilledLineRasterizer(raster);
 
         // Vytvoříme panel, který umí vykreslit BufferedImage
         panel = new JPanel() {
