@@ -4,8 +4,7 @@ import rasterize.TrivialLineRasterizer;
 
 import javax.swing.*;
 import java.awt.*;
-import java.awt.event.MouseAdapter;
-import java.awt.event.MouseEvent;
+import java.awt.event.*;
 
 /**
  * Vlastní examples.Canvas, který využívá RasterBufferedImage a LineRasterizer.
@@ -51,24 +50,46 @@ public class MyCanvas {
         frame.pack();
         frame.setVisible(true);
 
-        // Přidáme listener, který odchytává pohyb myší
-        panel.addMouseMotionListener(new MouseAdapter() {
-            // mouseDragged se zavolá, když "kliknu, držím a hýbu myší"
+        // Key listener pro zachytravani eventu klavesnice
+        panel.requestFocus();
+        panel.addKeyListener(new KeyAdapter() {
             @Override
-            public void mouseDragged(MouseEvent e) {
-                super.mouseDragged(e);
-                // Vyčistím raster
-                raster.clear();
-                // Vykreslím úsečku ze středu obrazovky k pozici myši
-                // tzn. A = střed obrazovky, B = pozice myši
-                lineRasterizer.rasterize(width / 2, height / 2, e.getX(), e.getY(),
-                        new Color(0xFFFFFF));
-
-                // Překreslím plátno, jinak by uživatel neviděl výsledek!
-                panel.repaint();
+            public void keyPressed(KeyEvent e) {
+                if (e.getKeyCode() == 67) {
+                    raster.setClearColor(0xFFFFFF);
+                    raster.clear();
+                    System.out.println("Platno bylo vymazano");
+                }
             }
         });
 
+        // Mouse listener na panel pro zachytavani eventu mysi
+        panel.addMouseMotionListener(new MouseAdapter() {
+            // Startovaci body s vychozi hodnotou 0
+            int startedPositionX = 0;
+            int startedPositionY = 0;
+
+            @Override
+            public void mouseMoved(MouseEvent e) {
+                super.mouseMoved(e);
+                // Log pozice pro kontrolu
+                System.out.println(e.getX() + " / " + e.getY());
+                // Aktualni pozice mysi
+                startedPositionX = e.getX();
+                startedPositionY = e.getY();
+            }
+
+            @Override
+            public void mouseDragged(MouseEvent e) {
+                super.mouseDragged(e);
+                // Vycisti raster pred kreslenim
+                raster.clear();
+                // Vykresluj usecku
+                lineRasterizer.rasterize(startedPositionX, startedPositionY, e.getX(), e.getY(), new Color(0xFFFFFF));
+                // Prekresli platno
+                panel.repaint();
+            }
+        });
     }
 
     // Pomocí Graphics vykreslí raster do panelu. Specifické pro BufferedImage
@@ -78,7 +99,6 @@ public class MyCanvas {
 
     // Vyčistí raster danou barvou
     private void clear(int color) {
-        raster.setClearColor(color);
         raster.clear();
     }
 

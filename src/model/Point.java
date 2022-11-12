@@ -13,7 +13,19 @@ public class Point {
         this.x = (int) Math.round(x);
         this.y = (int) Math.round(y);
     }
+    /**
+     * Get X
+     * @return {int} x
+     */
+    public int getX() {
+        return (int) Math.round(this.x);
+    }
 
-    //TODO
-
+    /**
+     * Get Y
+     * @return {int} x
+     */
+    public int getY() {
+        return (int) Math.round(this.y);
+    }
 }
