@@ -1,7 +1,4 @@
-import rasterize.LineRasterizer;
-import rasterize.RasterBufferedImage;
-import rasterize.TrivialLineRasterizer;
-import rasterize.FilledLineRasterizer;
+import rasterize.*;
 
 import javax.swing.*;
 import java.awt.*;
@@ -14,6 +11,7 @@ public class MyCanvas {
     private JPanel panel;
     private RasterBufferedImage raster;
     private LineRasterizer lineRasterizer;
+    private DottedLineRasterizer dottedLineRasterizer;
 
     // Vytvoreni pointu jakozto zakladni pozice
     private Point startedPoints = new Point();
@@ -34,6 +32,7 @@ public class MyCanvas {
         raster = new RasterBufferedImage(width, height);
         // Filled line rasterizer s upravenym trivialnim algoritmem
         lineRasterizer = new FilledLineRasterizer(raster);
+        dottedLineRasterizer = new DottedLineRasterizer(raster);
 
         // Vytvoříme panel, který umí vykreslit BufferedImage
         panel = new JPanel() {
@@ -82,7 +81,9 @@ public class MyCanvas {
             public void mouseClicked(MouseEvent e) {}
 
             @Override
-            public void mouseReleased(MouseEvent e) {}
+            public void mouseReleased(MouseEvent e) {
+                drawLine(startedPoints.x, startedPoints.y, e.getX(), e.getY(), new Color(0xffffff), false);
+            }
 
             @Override
             public void mouseEntered(MouseEvent e) {}
@@ -95,13 +96,8 @@ public class MyCanvas {
             @Override
             public void mouseDragged(MouseEvent e) {
                 super.mouseDragged(e);
-                // Vycisti raster pred kreslenim
-                raster.clear();
-                // Vykresluj usecku
-                lineRasterizer.rasterize(startedPoints.x, startedPoints.y, e.getX(), e.getY(), new Color(0xFFFFFF));
-                // Prekresli platno
-                raster.setClearColor(0xaaaaaa);
-                panel.repaint();
+                // Nakresli usecku
+                drawLine(startedPoints.x, startedPoints.y, e.getX(), e.getY(), new Color(0xFF0000), true);
             }
         });
     }
@@ -111,18 +107,35 @@ public class MyCanvas {
         raster.repaint(graphics);
     }
 
+    // Vykreslení úsečky jako samostatná metoda
+    private void drawLine(int startX, int startY, int endX, int endY, Color color, boolean isDottedLine) {
+        // Vycisti raster pred kreslenim
+       clear(0xaaaaaa);
+        // Vykresluj usecku dle parametru
+        if (isDottedLine) {
+            dottedLineRasterizer.rasterize(startX, startY, endX, endY, color);
+        } else {
+            lineRasterizer.rasterize(startX, startY, endX, endY, color);
+        }
+        // Prekresli platno
+        repaint(0xaaaaaa);
+    }
+
     // Vyčistí raster danou barvou
     private void clear(int color) {
         raster.setClearColor(0xaaaaaa);
         raster.clear();
     }
-
+    // Prekresli platno
+    private void repaint(int color) {
+        raster.setClearColor(color);
+        panel.repaint();
+    }
     // Při spuštění provedeme vyčištění rasteru a raster zobrazíme
     private void start() {
         clear(0xaaaaaa);
         panel.repaint();
     }
-
     // Vstupní bod do aplikace
     public static void main(String[] args) {
         // Vytvoří se instance třídy MyCanvas a zavolá se metoda start()

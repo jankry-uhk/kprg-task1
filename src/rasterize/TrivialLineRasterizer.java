@@ -1,5 +1,7 @@
 package rasterize;
 
+import java.awt.*;
+
 import static java.lang.Math.abs;
 
 public class TrivialLineRasterizer extends LineRasterizer {
@@ -9,7 +11,7 @@ public class TrivialLineRasterizer extends LineRasterizer {
     }
 
     @Override
-    protected void drawLine(int x1, int y1, int x2, int y2) {
+    protected void drawLine(int x1, int y1, int x2, int y2, Color color) {
         float k = (y2 - y1) / (float) (x2 - x1);
         float q = y1 - k * x1;
 
