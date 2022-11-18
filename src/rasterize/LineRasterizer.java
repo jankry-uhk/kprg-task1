@@ -24,9 +24,9 @@ public abstract class LineRasterizer {
         //TODO
     }
 
-    public void rasterize(int x1, int y1, int x2, int y2, Color color) {
-        drawLine(x1, y1, x2, y2, color);
+    public void rasterize(int x1, int y1, int x2, int y2, Color color, boolean isDotted) {
+        drawLine(x1, y1, x2, y2, color, isDotted);
     }
 
-    protected void drawLine(int x1, int y1, int x2, int y2, Color color) {}
+    protected void drawLine(int x1, int y1, int x2, int y2, Color color, boolean isDotted) {}
 }
