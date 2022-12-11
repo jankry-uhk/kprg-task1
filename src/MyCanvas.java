@@ -76,8 +76,10 @@ public class MyCanvas {
             public void mousePressed(MouseEvent e) {
                 super.mousePressed(e);
                 // Add new point on click
-                polygon.addPoint(new Point(e.getX(), e.getY()));
-                System.out.println("Added point" + e.getX() + ":" + e.getY());
+                if (polygon.getSize() < 1) {
+                    polygon.addPoint(new Point(e.getX(), e.getY()));
+                    System.out.println("Added point" + e.getX() + ":" + e.getY());
+                }
             }
 
             @Override
@@ -90,6 +92,10 @@ public class MyCanvas {
                     System.out.println(lastPoint.getX() + " | " + lastPoint.getY() + " | " + e.getX() + " | " + e.getY());
                     drawLine(lastPoint.getX(), lastPoint.getY(), e.getX(), e.getY(), new Color(0xFFFFFFF), false);
                 }
+
+
+                polygon.addPoint(new Point(e.getX(), e.getY()));
+                System.out.println("Added point" + e.getX() + ":" + e.getY());
 
                 panel.repaint();
             }
