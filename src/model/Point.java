@@ -1,5 +1,8 @@
 package model;
 
+import java.util.ArrayList;
+import java.util.List;
+
 public class Point {
 
     public int x, y;
@@ -8,7 +11,6 @@ public class Point {
         this.x = x;
         this.y = y;
     }
-
 
     /**
      * Get X
