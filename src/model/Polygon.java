@@ -42,10 +42,17 @@ public class Polygon {
     }
 
     /**
-     * Remove all points for point list
+     * Get list size
      * @return int size
      */
     public int getSize() {
         return points.size();
+    }
+
+    /**
+     * Clear all points
+     */
+    public void clear() {
+        points.clear();
     }
 }

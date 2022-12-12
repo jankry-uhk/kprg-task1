@@ -22,6 +22,10 @@ public class MyCanvas {
 
     private Boolean isMouseDragged = false;
 
+    private Color colorYellow = new Color(0xFFFF00);
+    private Color colorWhite = new Color(0xFFFFFFF);
+    private int colorDefault = 0xaaaaaa;
+
     public MyCanvas(int width, int height) {
         // Instance okna
         JFrame frame = new JFrame();
@@ -46,9 +50,9 @@ public class MyCanvas {
 
             @Override
             public void paintComponent(Graphics g) {
-                super.paintComponent(g);
-                // Vykreslíme BufferedImage
-                present(g);
+            super.paintComponent(g);
+            // Vykreslíme BufferedImage
+            present(g);
             }
         };
         // Velikost panelu
@@ -64,10 +68,9 @@ public class MyCanvas {
         panel.addKeyListener(new KeyAdapter() {
             @Override
             public void keyPressed(KeyEvent e) {
-                if (e.getKeyCode() == 67) {
-                    repaint(0xaaaaaa);
-                    System.out.println("Platno bylo vymazano");
-                }
+            if (e.getKeyCode() == 67) {
+                clear();
+            }
             }
         });
 
@@ -85,19 +88,19 @@ public class MyCanvas {
             @Override
             public void mouseReleased(MouseEvent e) {
                 super.mouseReleased(e);
+                Point lastPoint = polygon.getLastAdded();
+                Point firstPoint = polygon.getFirstPoint();
 
-                if (polygon.getSize() > 1) {
-                    Point lastPoint = polygon.getLastAdded();
-
-                    System.out.println(lastPoint.getX() + " | " + lastPoint.getY() + " | " + e.getX() + " | " + e.getY());
-                    drawLine(lastPoint.getX(), lastPoint.getY(), e.getX(), e.getY(), new Color(0xFFFFFFF), false);
+                if (polygon.getSize() > 0) {
+                    drawLine(lastPoint.getX(), lastPoint.getY(), e.getX(), e.getY(), colorWhite, false);
                 }
 
+                if (polygon.getSize() >= 2) {
+                    drawLine(firstPoint.getX(), firstPoint.getY(), e.getX(), e.getY(), new Color(0xFFFFFF), false);
+                }
 
                 polygon.addPoint(new Point(e.getX(), e.getY()));
-                System.out.println("Added point" + e.getX() + ":" + e.getY());
-
-                panel.repaint();
+                repaint(0xaaaaaa);
             }
         };
 
@@ -105,18 +108,24 @@ public class MyCanvas {
             @Override
             public void mouseDragged(MouseEvent e) {
                 super.mouseDragged(e);
-                Point lastPoint = polygon.getLastAdded();
-                // Vycisti raster pred kreslenim
-                clear(0xaaaaaa);
 
+                Point lastPoint = polygon.getLastAdded();
+                Point firstPoint = polygon.getFirstPoint();
+                // Vycisti raster pred kreslenim
+                raster.clear();
+
+                // Pokud mam jen jeden bod, vedu usecku pouze k jednomu bodu, pokud dva vedu k oboum
                 if (polygon.getSize() <= 1) {
-                    // Nakresli usecku
-                    drawLine(lastPoint.getX(), lastPoint.getY(), e.getX(), e.getY(), new Color(0xFF0000), true);
+                    drawLine(lastPoint.getX(), lastPoint.getY(), e.getX(), e.getY(), colorYellow, true);
                 } else {
-                    Point lastPrev = polygon.getPointByIndex(polygon.getSize() - 2);
-                    drawLine(lastPoint.getX(), lastPoint.getY(), e.getX(), e.getY(), new Color(0xFF0000), true);
-                    drawLine(lastPrev.getX(), lastPrev.getY(), e.getX(), e.getY(), new Color(0xFF0000), true);
+                    drawLine(lastPoint.getX(), lastPoint.getY(), e.getX(), e.getY(), colorYellow, true);
+                    drawLine(firstPoint.getX(), firstPoint.getY(), e.getX(), e.getY(), colorYellow, true);
                 }
+                // Prekresli polygon
+                redrawPolyline();
+                // Prekresli panel
+                panel.repaint();
+
             }
         };
         // Naveseni listeneru na panel
@@ -132,9 +141,6 @@ public class MyCanvas {
     // Vykreslení úsečky jako samostatná metoda
     private void drawLine(int startX, int startY, int endX, int endY, Color color, boolean isDottedLine) {
         // Vykresluj usecku dle parametru
-        System.out.println(">> Vykresluji usecku");
-        //System.out.println(startX + "/ " + startY + "/ " + endX + "/ " + endY + "/ " + color);
-
         if (isDottedLine) {
             dottedLineRasterizer.rasterize(startX, startY, endX, endY, color, true);
         } else {
@@ -145,10 +151,20 @@ public class MyCanvas {
         repaint(0xaaaaaa);
     }
 
-    // Vyčistí raster danou barvou
-    private void clear(int color) {
-        raster.setClearColor(0xaaaaaa);
+    public void redrawPolyline() {
+        if (polygon.getSize() > 1) {
+            for(int i = 0; i < polygon.getSize(); ++i) {
+                int polygonSize = polygon.getSize();
+               drawLine((polygon.getPointByIndex((i + 1) % polygonSize)).getX(), (polygon.getPointByIndex((i + 1) % polygonSize)).getY(), (polygon.getPointByIndex(i)).getX(), (polygon.getPointByIndex(i)).getY(), colorWhite, false);
+            }
+        }
+    }
+
+    // Vyčisti raster a odeber všechny body
+    private void clear() {
+        raster.setClearColor(colorDefault);
         raster.clear();
+        polygon.clear();
     }
     // Prekresli platno
     private void repaint(int color) {
@@ -157,7 +173,7 @@ public class MyCanvas {
     }
     // Při spuštění provedeme vyčištění rasteru a raster zobrazíme
     private void start() {
-        clear(0xaaaaaa);
+        clear();
         panel.repaint();
     }
     // Vstupní bod do aplikace
