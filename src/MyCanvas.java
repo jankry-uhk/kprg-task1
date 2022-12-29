@@ -125,17 +125,9 @@ public class MyCanvas {
 
                 Point lastPoint = polygon.getLastAdded();
                 Point firstPoint = polygon.getFirstPoint();
-                // Vycisti raster pred kreslenim
                 raster.clear();
 
                 if (isRegularPoly) {
-
-                    System.out.println("Dragged regular poly");
-                    System.out.println("LAST ADDED X: " + polygon.getLastAdded().getX());
-                    System.out.println("LAST ADDED Y: " + polygon.getLastAdded().getY());
-                    System.out.println("ACTUAL X: " + e.getX());
-                    System.out.println("ACTUAL Y: " + e.getY());
-
                     drawRegularPolygon(lastPoint.getX(), lastPoint.getY(), e.getX(), e.getY());
                 } else {
                     // Pokud mam jen jeden bod, vedu usecku pouze k jednomu bodu, pokud dva vedu k oboum
@@ -145,10 +137,8 @@ public class MyCanvas {
                         drawLine(lastPoint.getX(), lastPoint.getY(), e.getX(), e.getY(), colorYellow, true);
                         drawLine(firstPoint.getX(), firstPoint.getY(), e.getX(), e.getY(), colorYellow, true);
                     }
-                    // Prekresli polygon
                     redrawPolyline();
                 }
-                // Prekresli panel
                 panel.repaint();
             }
         };
@@ -157,35 +147,41 @@ public class MyCanvas {
         this.panel.addMouseMotionListener(mouseMotionActions);
     }
 
-    // Pomocí Graphics vykreslí raster do panelu. Specifické pro BufferedImage
+    /**
+     * Pomocí Graphics vykreslí raster do panelu
+     * Specifické pro BufferedImage
+     */
     private void present(Graphics graphics) {
         raster.repaint(graphics);
     }
 
-    // Vykreslení úsečky jako samostatná metoda
+   /**
+    * Vykreslí úsečku dle parametrů
+    */
     private void drawLine(int startX, int startY, int endX, int endY, Color color, boolean isDottedLine) {
-        // Vykresluj usecku dle parametru
+        // Vykresli plnou nebo teckovanou usecku
         if (isDottedLine) {
             dottedLineRasterizer.rasterize(startX, startY, endX, endY, color, true);
         } else {
-            System.out.println("is filled");
             filledLineRasterizer.rasterize(startX, startY, endX, endY, color);
         }
-        // Prekresli platno
         repaint(0xaaaaaa);
     }
 
+    /**
+     * Překreslí polygon
+     */
     public void redrawPolyline() {
         int polygonSize = polygon.getSize();
-
         if (polygon.getSize() > 1) {
             for (int i = 0; i < polygonSize; ++i) {
                drawLine((polygon.getPointByIndex((i + 1) % polygonSize)).getX(), (polygon.getPointByIndex((i + 1) % polygonSize)).getY(), (polygon.getPointByIndex(i)).getX(), (polygon.getPointByIndex(i)).getY(), colorWhite, false);
             }
         }
     }
+
     /**
-     * Draw regular polygon
+     * Vykreslí rovnoramenný trojúhelník
      */
     public void drawRegularPolygon(int x1, int y1, int x2, int y2) {
         double actualRadius = 0.0;
@@ -205,18 +201,27 @@ public class MyCanvas {
         }
     }
 
-    // Vyčisti raster a odeber všechny body
+    /**
+     * Vyčistí raster včetně bodů
+     */
     private void clear() {
         raster.setClearColor(colorDefault);
         raster.clear();
         polygon.clear();
     }
-    // Prekresli platno
+
+    /**
+     * Překresli plátno
+     */
     private void repaint(int color) {
         raster.setClearColor(color);
         panel.repaint();
     }
-    // Při spuštění provedeme vyčištění rasteru a raster zobrazíme
+
+    /**
+     * Startovací třída
+     * Vyčistí a překeslí plátno
+     */
     private void start() {
         clear();
         panel.repaint();
