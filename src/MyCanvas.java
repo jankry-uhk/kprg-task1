@@ -1,11 +1,11 @@
-import rasterize.LineRasterizer;
-import rasterize.RasterBufferedImage;
-import rasterize.TrivialLineRasterizer;
+import rasterize.*;
+
+import model.Point;
+import model.Polygon;
 
 import javax.swing.*;
 import java.awt.*;
-import java.awt.event.MouseAdapter;
-import java.awt.event.MouseEvent;
+import java.awt.event.*;
 
 /**
  * Vlastní examples.Canvas, který využívá RasterBufferedImage a LineRasterizer.
@@ -13,7 +13,17 @@ import java.awt.event.MouseEvent;
 public class MyCanvas {
     private JPanel panel;
     private RasterBufferedImage raster;
-    private LineRasterizer lineRasterizer;
+    private FilledLineRasterizer filledLineRasterizer;
+    private DottedLineRasterizer dottedLineRasterizer;
+
+    private Polygon polygon = new Polygon();
+
+    private Boolean isMouseDragged = false;
+    private Boolean isRegularPoly = false;
+
+    private Color colorYellow = new Color(0xFFFF00);
+    private Color colorWhite = new Color(0xFFFFFFF);
+    private int colorDefault = 0xaaaaaa;
 
     public MyCanvas(int width, int height) {
         // Instance okna
@@ -29,8 +39,9 @@ public class MyCanvas {
 
         // Instance rasteru. Můžeme mít různé rastery.
         raster = new RasterBufferedImage(width, height);
-        // Instance line rasterizeru. Můžeme mít různé rasterizery. Např. pro každý algoritmus tzn. TrivialLineRasterizer, MidpointLineRasterizer, ...
-        lineRasterizer = new TrivialLineRasterizer(raster);
+        // Filled line rasterizer s upravenym trivialnim algoritmem
+        filledLineRasterizer = new FilledLineRasterizer(raster);
+        dottedLineRasterizer = new DottedLineRasterizer(raster);
 
         // Vytvoříme panel, který umí vykreslit BufferedImage
         panel = new JPanel() {
@@ -39,6 +50,7 @@ public class MyCanvas {
             @Override
             public void paintComponent(Graphics g) {
                 super.paintComponent(g);
+
                 // Vykreslíme BufferedImage
                 present(g);
             }
@@ -51,46 +63,171 @@ public class MyCanvas {
         frame.pack();
         frame.setVisible(true);
 
-        // Přidáme listener, který odchytává pohyb myší
-        panel.addMouseMotionListener(new MouseAdapter() {
-            // mouseDragged se zavolá, když "kliknu, držím a hýbu myší"
-            @Override
-            public void mouseDragged(MouseEvent e) {
-                super.mouseDragged(e);
-                // Vyčistím raster
-                raster.clear();
-                // Vykreslím úsečku ze středu obrazovky k pozici myši
-                // tzn. A = střed obrazovky, B = pozice myši
-                lineRasterizer.rasterize(width / 2, height / 2, e.getX(), e.getY(),
-                        new Color(0xFFFFFF));
+        // Key listener pro zachytravani eventu klavesnice
+        panel.requestFocus();
+        panel.addKeyListener(new KeyAdapter() {
+            // Keycodes list https://stackoverflow.com/a/31637206
 
-                // Překreslím plátno, jinak by uživatel neviděl výsledek!
-                panel.repaint();
+            @Override
+            public void keyPressed(KeyEvent e) {
+                if (e.getKeyCode() == 67) {
+                    clear();
+                }
+                // Handle pro vykreslení rovnoramenného trojůhelníku
+                if (e.getKeyCode() == 84) {
+                    // Override drag
+                    System.out.println("Regular poly");
+                    // Zapinani a vypinani rovnoramenneho trojuhelnika
+                    isRegularPoly = !isRegularPoly;
+                    // Vymaz jiz aplikovane body
+                    polygon.deletePoints();
+                }
             }
         });
 
+        MouseAdapter mouseActions = new MouseAdapter() {
+            @Override
+            public void mousePressed(MouseEvent e) {
+                super.mousePressed(e);
+                // Add new point on click
+                if (polygon.getSize() < 1) {
+                    polygon.addPoint(new Point(e.getX(), e.getY()));
+                    System.out.println("Added point" + e.getX() + ":" + e.getY());
+                }
+            }
+
+            @Override
+            public void mouseReleased(MouseEvent e) {
+                super.mouseReleased(e);
+                Point lastPoint = polygon.getLastAdded();
+                Point firstPoint = polygon.getFirstPoint();
+
+                if (!isRegularPoly) {
+                    if (polygon.getSize() > 0) {
+                        drawLine(lastPoint.getX(), lastPoint.getY(), e.getX(), e.getY(), colorWhite, false);
+                    }
+
+                    if (polygon.getSize() >= 2) {
+                        drawLine(firstPoint.getX(), firstPoint.getY(), e.getX(), e.getY(), new Color(0xFFFFFF), false);
+                    }
+                }
+
+                polygon.addPoint(new Point(e.getX(), e.getY()));
+
+                repaint(0xaaaaaa);
+            }
+        };
+
+        MouseMotionAdapter mouseMotionActions = new MouseMotionAdapter() {
+            @Override
+            public void mouseDragged(MouseEvent e) {
+                super.mouseDragged(e);
+
+                Point lastPoint = polygon.getLastAdded();
+                Point firstPoint = polygon.getFirstPoint();
+                raster.clear();
+
+                if (isRegularPoly) {
+                    drawRegularPolygon(lastPoint.getX(), lastPoint.getY(), e.getX(), e.getY());
+                } else {
+                    // Pokud mam jen jeden bod, vedu usecku pouze k jednomu bodu, pokud dva vedu k oboum
+                    if (polygon.getSize() <= 1) {
+                        drawLine(lastPoint.getX(), lastPoint.getY(), e.getX(), e.getY(), colorYellow, true);
+                    } else {
+                        drawLine(lastPoint.getX(), lastPoint.getY(), e.getX(), e.getY(), colorYellow, true);
+                        drawLine(firstPoint.getX(), firstPoint.getY(), e.getX(), e.getY(), colorYellow, true);
+                    }
+                    redrawPolyline();
+                }
+                panel.repaint();
+            }
+        };
+        // Naveseni listeneru na panel
+        this.panel.addMouseListener(mouseActions);
+        this.panel.addMouseMotionListener(mouseMotionActions);
     }
 
-    // Pomocí Graphics vykreslí raster do panelu. Specifické pro BufferedImage
+    /**
+     * Pomocí Graphics vykreslí raster do panelu
+     * Specifické pro BufferedImage
+     */
     private void present(Graphics graphics) {
         raster.repaint(graphics);
     }
 
-    // Vyčistí raster danou barvou
-    private void clear(int color) {
-        raster.setClearColor(color);
-        raster.clear();
+   /**
+    * Vykreslí úsečku dle parametrů
+    */
+    private void drawLine(int startX, int startY, int endX, int endY, Color color, boolean isDottedLine) {
+        // Vykresli plnou nebo teckovanou usecku
+        if (isDottedLine) {
+            dottedLineRasterizer.rasterize(startX, startY, endX, endY, color, true);
+        } else {
+            filledLineRasterizer.rasterize(startX, startY, endX, endY, color);
+        }
+        repaint(0xaaaaaa);
     }
 
-    // Při spuštění provedeme vyčištění rasteru a raster zobrazíme
-    private void start() {
-        clear(0xaaaaaa);
+    /**
+     * Překreslí polygon
+     */
+    public void redrawPolyline() {
+        int polygonSize = polygon.getSize();
+        if (polygon.getSize() > 1) {
+            for (int i = 0; i < polygonSize; ++i) {
+               drawLine((polygon.getPointByIndex((i + 1) % polygonSize)).getX(), (polygon.getPointByIndex((i + 1) % polygonSize)).getY(), (polygon.getPointByIndex(i)).getX(), (polygon.getPointByIndex(i)).getY(), colorWhite, false);
+            }
+        }
+    }
+
+    /**
+     * Vykreslí rovnoramenný trojúhelník
+     */
+    public void drawRegularPolygon(int x1, int y1, int x2, int y2) {
+        double actualRadius = 0.0;
+        double defaultRadius = 360.0;
+        double size = 3;
+
+        double x0 = x2 - x1;
+        double y0 = y2 - y1;
+
+        double y;
+        for (double step = defaultRadius / size; actualRadius < defaultRadius; y0 = y) {
+            actualRadius += step;
+            double x = x0 * Math.cos(Math.toRadians(step)) + y0 * Math.sin(Math.toRadians(step));
+            y = y0 * Math.cos(Math.toRadians(step)) - x0 * Math.sin(Math.toRadians(step));
+            drawLine((int)x0 + x1, (int)y0 + y1, (int)x + x1, (int)y + y1, colorWhite, false);
+            x0 = x;
+        }
+    }
+
+    /**
+     * Vyčistí raster včetně bodů
+     */
+    private void clear() {
+        raster.setClearColor(colorDefault);
+        raster.clear();
+        polygon.clear();
+    }
+
+    /**
+     * Překresli plátno
+     */
+    private void repaint(int color) {
+        raster.setClearColor(color);
         panel.repaint();
     }
 
-    // Vstupní bod do aplikace
+    /**
+     * Startovací třída
+     * Vyčistí a překeslí plátno
+     */
+    private void start() {
+        clear();
+        panel.repaint();
+    }
+
     public static void main(String[] args) {
-        // Vytvoří se instance třídy MyCanvas a zavolá se metoda start()
         SwingUtilities.invokeLater(() -> new MyCanvas(800, 600).start());
     }
 }

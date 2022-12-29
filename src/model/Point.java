@@ -1,5 +1,6 @@
 package model;
 
+
 public class Point {
 
     public int x, y;
@@ -9,11 +10,19 @@ public class Point {
         this.y = y;
     }
 
-    public Point(double x, double y) {
-        this.x = (int) Math.round(x);
-        this.y = (int) Math.round(y);
+    /**
+     * Get X
+     * @return {int} x
+     */
+    public int getX() {
+        return (int) this.x;
     }
 
-    //TODO
-
+    /**
+     * Get Y
+     * @return {int} x
+     */
+    public int getY() {
+        return (int) this.y;
+    }
 }
