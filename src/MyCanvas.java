@@ -16,11 +16,10 @@ public class MyCanvas {
     private FilledLineRasterizer filledLineRasterizer;
     private DottedLineRasterizer dottedLineRasterizer;
 
-    // Vytvoreni pointu jakozto zakladni pozice
-    private Point startedPoints;
     private Polygon polygon = new Polygon();
 
     private Boolean isMouseDragged = false;
+    private Boolean isRegularPoly = false;
 
     private Color colorYellow = new Color(0xFFFF00);
     private Color colorWhite = new Color(0xFFFFFFF);
@@ -50,9 +49,10 @@ public class MyCanvas {
 
             @Override
             public void paintComponent(Graphics g) {
-            super.paintComponent(g);
-            // Vykreslíme BufferedImage
-            present(g);
+                super.paintComponent(g);
+
+                // Vykreslíme BufferedImage
+                present(g);
             }
         };
         // Velikost panelu
@@ -66,11 +66,22 @@ public class MyCanvas {
         // Key listener pro zachytravani eventu klavesnice
         panel.requestFocus();
         panel.addKeyListener(new KeyAdapter() {
+            // Keycodes list https://stackoverflow.com/a/31637206
+
             @Override
             public void keyPressed(KeyEvent e) {
-            if (e.getKeyCode() == 67) {
-                clear();
-            }
+                if (e.getKeyCode() == 67) {
+                    clear();
+                }
+                // Handle pro vykreslení rovnoramenného trojůhelníku
+                if (e.getKeyCode() == 84) {
+                    // Override drag
+                    System.out.println("Regular poly");
+                    // Zapinani a vypinani rovnoramenneho trojuhelnika
+                    isRegularPoly = !isRegularPoly;
+                    // Vymaz jiz aplikovane body
+                    polygon.deletePoints();
+                }
             }
         });
 
@@ -91,15 +102,18 @@ public class MyCanvas {
                 Point lastPoint = polygon.getLastAdded();
                 Point firstPoint = polygon.getFirstPoint();
 
-                if (polygon.getSize() > 0) {
-                    drawLine(lastPoint.getX(), lastPoint.getY(), e.getX(), e.getY(), colorWhite, false);
-                }
+                if (!isRegularPoly) {
+                    if (polygon.getSize() > 0) {
+                        drawLine(lastPoint.getX(), lastPoint.getY(), e.getX(), e.getY(), colorWhite, false);
+                    }
 
-                if (polygon.getSize() >= 2) {
-                    drawLine(firstPoint.getX(), firstPoint.getY(), e.getX(), e.getY(), new Color(0xFFFFFF), false);
+                    if (polygon.getSize() >= 2) {
+                        drawLine(firstPoint.getX(), firstPoint.getY(), e.getX(), e.getY(), new Color(0xFFFFFF), false);
+                    }
                 }
 
                 polygon.addPoint(new Point(e.getX(), e.getY()));
+
                 repaint(0xaaaaaa);
             }
         };
@@ -114,18 +128,28 @@ public class MyCanvas {
                 // Vycisti raster pred kreslenim
                 raster.clear();
 
-                // Pokud mam jen jeden bod, vedu usecku pouze k jednomu bodu, pokud dva vedu k oboum
-                if (polygon.getSize() <= 1) {
-                    drawLine(lastPoint.getX(), lastPoint.getY(), e.getX(), e.getY(), colorYellow, true);
+                if (isRegularPoly) {
+
+                    System.out.println("Dragged regular poly");
+                    System.out.println("LAST ADDED X: " + polygon.getLastAdded().getX());
+                    System.out.println("LAST ADDED Y: " + polygon.getLastAdded().getY());
+                    System.out.println("ACTUAL X: " + e.getX());
+                    System.out.println("ACTUAL Y: " + e.getY());
+
+                    drawRegularPolygon(lastPoint.getX(), lastPoint.getY(), e.getX(), e.getY());
                 } else {
-                    drawLine(lastPoint.getX(), lastPoint.getY(), e.getX(), e.getY(), colorYellow, true);
-                    drawLine(firstPoint.getX(), firstPoint.getY(), e.getX(), e.getY(), colorYellow, true);
+                    // Pokud mam jen jeden bod, vedu usecku pouze k jednomu bodu, pokud dva vedu k oboum
+                    if (polygon.getSize() <= 1) {
+                        drawLine(lastPoint.getX(), lastPoint.getY(), e.getX(), e.getY(), colorYellow, true);
+                    } else {
+                        drawLine(lastPoint.getX(), lastPoint.getY(), e.getX(), e.getY(), colorYellow, true);
+                        drawLine(firstPoint.getX(), firstPoint.getY(), e.getX(), e.getY(), colorYellow, true);
+                    }
+                    // Prekresli polygon
+                    redrawPolyline();
                 }
-                // Prekresli polygon
-                redrawPolyline();
                 // Prekresli panel
                 panel.repaint();
-
             }
         };
         // Naveseni listeneru na panel
@@ -152,11 +176,32 @@ public class MyCanvas {
     }
 
     public void redrawPolyline() {
+        int polygonSize = polygon.getSize();
+
         if (polygon.getSize() > 1) {
-            for(int i = 0; i < polygon.getSize(); ++i) {
-                int polygonSize = polygon.getSize();
+            for (int i = 0; i < polygonSize; ++i) {
                drawLine((polygon.getPointByIndex((i + 1) % polygonSize)).getX(), (polygon.getPointByIndex((i + 1) % polygonSize)).getY(), (polygon.getPointByIndex(i)).getX(), (polygon.getPointByIndex(i)).getY(), colorWhite, false);
             }
+        }
+    }
+    /**
+     * Draw regular polygon
+     */
+    public void drawRegularPolygon(int x1, int y1, int x2, int y2) {
+        double actualRadius = 0.0;
+        double defaultRadius = 360.0;
+        double size = 3;
+
+        double x0 = x2 - x1;
+        double y0 = y2 - y1;
+
+        double y;
+        for (double step = defaultRadius / size; actualRadius < defaultRadius; y0 = y) {
+            actualRadius += step;
+            double x = x0 * Math.cos(Math.toRadians(step)) + y0 * Math.sin(Math.toRadians(step));
+            y = y0 * Math.cos(Math.toRadians(step)) - x0 * Math.sin(Math.toRadians(step));
+            drawLine((int)x0 + x1, (int)y0 + y1, (int)x + x1, (int)y + y1, colorWhite, false);
+            x0 = x;
         }
     }
 
@@ -176,9 +221,8 @@ public class MyCanvas {
         clear();
         panel.repaint();
     }
-    // Vstupní bod do aplikace
+
     public static void main(String[] args) {
-        // Vytvoří se instance třídy MyCanvas a zavolá se metoda start()
         SwingUtilities.invokeLater(() -> new MyCanvas(800, 600).start());
     }
 }
