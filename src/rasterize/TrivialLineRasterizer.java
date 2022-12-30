@@ -16,9 +16,6 @@ public class TrivialLineRasterizer extends LineRasterizer {
         float q = y1 - k * x1;
         // Pokud ma byt cara carkovana, pridej gap
         int dotGap =  isDotted ? 30 : 1;
-        // Logovani diagonaly
-        System.out.println("diagonala:asdadasdad " + k);
-
         if (abs(k) < 1) {
             if (x1 > x2) {
                 int a = x1;

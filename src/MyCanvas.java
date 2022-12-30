@@ -18,12 +18,18 @@ public class MyCanvas {
 
     private Polygon polygon = new Polygon();
 
+    // Boolean variables
     private Boolean isMouseDragged = false;
     private Boolean isRegularPoly = false;
 
+    // Colors
     private Color colorYellow = new Color(0xFFFF00);
     private Color colorWhite = new Color(0xFFFFFFF);
     private int colorDefault = 0xaaaaaa;
+
+    // Canvas sizes
+    public int width = 800;
+    public int height = 600;
 
     public MyCanvas(int width, int height) {
         // Instance okna
@@ -75,8 +81,6 @@ public class MyCanvas {
                 }
                 // Handle pro vykreslení rovnoramenného trojůhelníku
                 if (e.getKeyCode() == 84) {
-                    // Override drag
-                    System.out.println("Regular poly");
                     // Zapinani a vypinani rovnoramenneho trojuhelnika
                     isRegularPoly = !isRegularPoly;
                     // Vymaz jiz aplikovane body
@@ -92,7 +96,6 @@ public class MyCanvas {
                 // Add new point on click
                 if (polygon.getSize() < 1) {
                     polygon.addPoint(new Point(e.getX(), e.getY()));
-                    System.out.println("Added point" + e.getX() + ":" + e.getY());
                 }
             }
 
@@ -159,13 +162,17 @@ public class MyCanvas {
     * Vykreslí úsečku dle parametrů
     */
     private void drawLine(int startX, int startY, int endX, int endY, Color color, boolean isDottedLine) {
-        // Vykresli plnou nebo teckovanou usecku
-        if (isDottedLine) {
-            dottedLineRasterizer.rasterize(startX, startY, endX, endY, color, true);
-        } else {
-            filledLineRasterizer.rasterize(startX, startY, endX, endY, color);
+        // Kontrola zda se body nenachazi mimo vyhrazeny prostor
+        boolean isNotOutOfBounds = (endY > 0 && startY > 0 && endY < raster.getHeight() - 1 && startY < raster.getHeight() - 1) && (endX > 0 && startX > 0 && endX < raster.getWidth() - 1 && startX < raster.getWidth() - 1);
+
+        if (isNotOutOfBounds) {
+            if (isDottedLine) {
+                dottedLineRasterizer.rasterize(startX, startY, endX, endY, color, true);
+            } else {
+                filledLineRasterizer.rasterize(startX, startY, endX, endY, color);
+            }
+            repaint(0xaaaaaa);
         }
-        repaint(0xaaaaaa);
     }
 
     /**
@@ -196,7 +203,7 @@ public class MyCanvas {
             actualRadius += step;
             double x = x0 * Math.cos(Math.toRadians(step)) + y0 * Math.sin(Math.toRadians(step));
             y = y0 * Math.cos(Math.toRadians(step)) - x0 * Math.sin(Math.toRadians(step));
-            drawLine((int)x0 + x1, (int)y0 + y1, (int)x + x1, (int)y + y1, colorWhite, false);
+            drawLine((int) x0 + x1, (int) y0 + y1, (int) x + x1, (int) y + y1, colorWhite, false);
             x0 = x;
         }
     }
@@ -205,6 +212,7 @@ public class MyCanvas {
      * Vyčistí raster včetně bodů
      */
     private void clear() {
+
         raster.setClearColor(colorDefault);
         raster.clear();
         polygon.clear();
